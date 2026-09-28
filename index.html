@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>烏克麗麗演奏模擬器 - Ukulele Studio</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        /* Wooden Texture Visuals */
+        .wood-bg {
+            background: linear-gradient(135deg, #3d2314 0%, #231209 100%);
+        }
+        .fretboard-wood {
+            background: linear-gradient(180deg, #2a1810 0%, #1a0e08 50%, #2a1810 100%);
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+        }
+        .fretboard-wood-horizontal {
+            background: linear-gradient(90deg, #2a1810 0%, #1a0e08 50%, #2a1810 100%);
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+        }
+        .body-wood {
+            background: radial-gradient(circle at 50% 50%, #c87a38 0%, #a15822 60%, #68320e 100%);
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.5), 0 15px 35px rgba(0,0,0,0.6);
+        }
+        .soundhole {
+            background: radial-gradient(circle, #0d0704 60%, #3d2314 80%, #d4af37 100%);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.9);
+        }
+
+        /* String Animations */
+        .string-vibrating {
+            animation: vibrate 0.08s infinite alternate;
+        }
+
+        @keyframes vibrate {
+            0% { transform: scale(1.02) translateY(-1px); }
+            100% { transform: scale(0.98) translateY(1px); }
+        }
+
+        /* Custom Scrollbar for Chord Pads */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .fret-dot {
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 h-[100dvh] max-h-[100dvh] flex flex-col justify-between overflow-hidden relative">
+
+    <div id="device-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-amber-500/30 rounded-2xl max-w-md w-full p-6 text-center shadow-2xl space-y-6">
+            <div>
+                <div class="w-16 h-16 bg-gradient-to-tr from-amber-600 to-amber-400 rounded-full flex items-center justify-center text-3xl mx-auto shadow-lg mb-3">🪕</div>
+                <h2 class="text-xl font-bold text-amber-300">歡迎使用 UkeStudio</h2>
+                <p class="text-xs text-slate-400 mt-1">請選擇您的設備類型以載入最佳演奏介面</p>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3">
+                <button onclick="setDeviceMode('mobile')" class="flex items-center gap-4 p-3.5 bg-slate-800 hover:bg-amber-600/20 border border-slate-700 hover:border-amber-500/60 rounded-xl transition group text-left">
+                    <div class="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 text-xl group-hover:scale-110 transition">
+                        <i class="fa-solid fa-mobile-screen"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-sm text-slate-200">智慧型手機 (Phone)</div>
+                        <div class="text-[11px] text-slate-400">直式全螢幕 • 垂直指板與底部刷弦區</div>
+                    </div>
+                </button>
+
+                <button onclick="setDeviceMode('tablet')" class="flex items-center gap-4 p-3.5 bg-slate-800 hover:bg-amber-600/20 border border-slate-700 hover:border-amber-500/60 rounded-xl transition group text-left">
+                    <div class="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 text-xl group-hover:scale-110 transition">
+                        <i class="fa-solid fa-tablet-screen-button"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-sm text-slate-200">平板電腦 (Tablet)</div>
+                        <div class="text-[11px] text-slate-400">觸控適應 • 垂直指板與大螢幕按鍵</div>
+                    </div>
+                </button>
+
+                <button onclick="setDeviceMode('desktop')" class="flex items-center gap-4 p-3.5 bg-slate-800 hover:bg-amber-600/20 border border-slate-700 hover:border-amber-500/60 rounded-xl transition group text-left">
+                    <div class="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 text-xl group-hover:scale-110 transition">
+                        <i class="fa-solid fa-desktop"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-sm text-slate-200">桌上型電腦 / 筆電 (Desktop)</div>
+                        <div class="text-[11px] text-slate-400">經典橫向寬螢幕 • 橫向指板與鍵盤快捷鍵</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-3 py-2 shrink-0 z-50">
+        <div class="max-w-5xl mx-auto flex items-center justify-between gap-2">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-full bg-amber-600 flex items-center justify-center text-sm shadow-md">
+                    <i class="fa-solid">🪕</i>
+                </div>
+                <div>
+                    <h1 class="text-base font-bold bg-gradient-to-r from-amber-400 to-amber-200 bg-clip-text text-transparent leading-tight">UkeStudio</h1>
+                    <p id="layout-tag" class="text-[10px] text-slate-400">垂直觸控模式</p>
+                </div>
+            </div>
+
+            <!-- Controls (Capo, Tuning, Device Switch, Metronome) -->
+            <div class="flex items-center gap-1.5 text-xs">
+                <!-- Device Mode Quick Switcher -->
+                <button id="device-switch-btn" onclick="openDeviceModal()" class="bg-slate-800 hover:bg-slate-700 text-amber-400 rounded px-2 py-1 border border-slate-700 text-[11px] flex items-center gap-1 font-medium">
+                    <i id="device-icon" class="fa-solid fa-mobile-screen"></i>
+                    <span id="device-label">手機模式</span>
+                </button>
+
+                <!-- Capo Selector -->
+                <div class="flex items-center bg-slate-800 rounded px-1.5 py-1 border border-slate-700">
+                    <span class="text-[10px] text-slate-400 mr-1">Capo:</span>
+                    <select id="capo-select" class="bg-slate-900 text-amber-400 font-semibold rounded text-xs outline-none">
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                </div>
+
+                <!-- Tuning Mode -->
+                <button id="tuning-btn" class="bg-slate-800 hover:bg-slate-700 text-amber-400 rounded px-2 py-1 border border-slate-700 text-[11px] font-medium">
+                    <span id="tuning-label">High-G</span>
+                </button>
+
+                <!-- Metronome Toggle -->
+                <button id="metro-toggle" class="bg-slate-800 hover:bg-slate-700 text-slate-300 rounded px-2 py-1 border border-slate-700 flex items-center gap-1">
+                    <i id="metro-icon" class="fa-solid fa-stopwatch text-amber-400"></i>
+                    <span class="text-[10px]">100</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main id="app-container" class="max-w-md mx-auto w-full flex-1 flex flex-col justify-between overflow-hidden p-2 gap-2 transition-all duration-300">
+
+        <!-- Mode & Chord Selector Bar -->
+        <section class="bg-slate-900/80 border border-slate-800 rounded-xl p-2 shrink-0">
+            <div class="flex items-center justify-between mb-1.5 gap-2">
+                <!-- Mode Switcher -->
+                <div class="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800 text-[11px]">
+                    <button id="mode-chord-btn" class="px-2.5 py-1 rounded-md font-semibold transition bg-amber-600 text-white shadow">
+                        快捷和弦
+                    </button>
+                    <button id="mode-free-btn" class="px-2.5 py-1 rounded-md font-semibold text-slate-400 hover:text-slate-200 transition">
+                        自由按弦
+                    </button>
+                </div>
+
+                <!-- Info Display -->
+                <div id="chord-info-display" class="text-xs font-semibold text-amber-400 bg-amber-950/40 border border-amber-800/50 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+                    <span id="current-chord-name" class="font-bold text-amber-300">C Major</span>
+                    <span id="chord-frets-tag" class="text-[10px] text-slate-400 font-mono">(0 0 0 3)</span>
+                </div>
+            </div>
+
+            <!-- Quick Chord Pads -->
+            <div id="chord-pads-container" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                <!-- Dynamically populated via JS -->
+            </div>
+        </section>
+
+        <!-- Instrument Dynamic Container (Vertical or Horizontal) -->
+        <section id="instrument-container" class="flex-1 flex flex-col gap-2 overflow-hidden relative">
+            <!-- Rendered dynamically by JS -->
+        </section>
+
+        <!-- Quick Strum Controls Bar -->
+        <section class="flex justify-between items-center gap-1.5 shrink-0">
+            <button id="strum-down-btn" class="flex-1 py-1.5 bg-slate-800 hover:bg-amber-600 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition flex items-center justify-center gap-1">
+                <i class="fa-solid fa-arrow-down text-amber-400"></i> 下刷 <span class="hidden md:inline text-[10px] opacity-60">(↓)</span>
+            </button>
+            <button id="strum-up-btn" class="flex-1 py-1.5 bg-slate-800 hover:bg-amber-600 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition flex items-center justify-center gap-1">
+                <i class="fa-solid fa-arrow-up text-amber-400"></i> 上刷 <span class="hidden md:inline text-[10px] opacity-60">(↑)</span>
+            </button>
+            <button id="strum-arpeggio-btn" class="flex-1 py-1.5 bg-slate-800 hover:bg-amber-600 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition flex items-center justify-center gap-1">
+                <i class="fa-solid fa-water text-amber-400"></i> 分解和弦
+            </button>
+        </section>
+
+    </main>
+
+    <script>
+        class UkuleleAudioEngine {
+            constructor() {
+                this.audioCtx = null;
+                this.isInitialized = false;
+
+                // Base frequencies for G4, C4, E4, A4 (in Hz)
+                this.baseTuningStandard = [440.00, 329.63, 261.63, 392.00]; // [A4, E4, C4, G4] (Strings 1, 2, 3, 4)
+                this.baseTuningLowG     = [440.00, 329.63, 261.63, 196.00]; // [A4, E4, C4, G3]
+                this.currentTuning = [...this.baseTuningStandard];
+                this.capo = 0;
+            }
+
+            init() {
+                if (!this.audioCtx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.audioCtx = new AudioContext();
+                }
+                if (this.audioCtx.state === 'suspended') {
+                    this.audioCtx.resume();
+                }
+                this.isInitialized = true;
+            }
+
+            setCapo(capoValue) {
+                this.capo = parseInt(capoValue, 10);
+            }
+
+            setTuning(isLowG) {
+                this.currentTuning = isLowG ? [...this.baseTuningLowG] : [...this.baseTuningStandard];
+            }
+
+            getFrequency(stringIdx, fret) {
+                const baseFreq = this.currentTuning[stringIdx];
+                const totalFrets = fret + this.capo;
+                return baseFreq * Math.pow(2, totalFrets / 12);
+            }
+
+            playPluck(stringIdx, fret = 0, delaySec = 0) {
+                this.init();
+                const freq = this.getFrequency(stringIdx, fret);
+                const startTime = this.audioCtx.currentTime + delaySec;
+
+                const osc1 = this.audioCtx.createOscillator();
+                const osc2 = this.audioCtx.createOscillator();
+                
+                osc1.type = 'triangle';
+                osc2.type = 'sawtooth';
+
+                osc1.frequency.setValueAtTime(freq, startTime);
+                osc2.frequency.setValueAtTime(freq * 2, startTime);
+
+                const bufferSize = this.audioCtx.sampleRate * 0.015;
+                const noiseBuffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    output[i] = Math.random() * 2 - 1;
+                }
+                const whiteNoise = this.audioCtx.createBufferSource();
+                whiteNoise.buffer = noiseBuffer;
+
+                const noiseFilter = this.audioCtx.createBiquadFilter();
+                noiseFilter.type = 'bandpass';
+                noiseFilter.frequency.setValueAtTime(3000, startTime);
+
+                const noiseGain = this.audioCtx.createGain();
+                noiseGain.gain.setValueAtTime(0.3, startTime);
+                noiseGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.015);
+
+                whiteNoise.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+
+                const bodyFilter = this.audioCtx.createBiquadFilter();
+                bodyFilter.type = 'lowpass';
+                bodyFilter.frequency.setValueAtTime(freq * 6, startTime);
+                bodyFilter.frequency.exponentialRampToValueAtTime(freq * 1.5, startTime + 1.2);
+
+                const mainGain = this.audioCtx.createGain();
+                mainGain.gain.setValueAtTime(0.001, startTime);
+                mainGain.gain.linearRampToValueAtTime(0.7, startTime + 0.005);
+                mainGain.gain.exponentialRampToValueAtTime(0.0001, startTime + 2.2);
+
+                const osc2Gain = this.audioCtx.createGain();
+                osc2Gain.gain.setValueAtTime(0.15, startTime);
+                osc2Gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.6);
+
+                osc1.connect(bodyFilter);
+                osc2.connect(osc2Gain);
+                osc2Gain.connect(bodyFilter);
+                noiseGain.connect(bodyFilter);
+
+                bodyFilter.connect(mainGain);
+                mainGain.connect(this.audioCtx.destination);
+
+                osc1.start(startTime);
+                osc2.start(startTime);
+                whiteNoise.start(startTime);
+
+                osc1.stop(startTime + 2.3);
+                osc2.stop(startTime + 2.3);
+                whiteNoise.stop(startTime + 0.02);
+            }
+        }
+
+        const CHORD_DATABASE = [
+            { name: "C", frets: [0, 0, 0, 3] },
+            { name: "G", frets: [0, 2, 3, 2] },
+            { name: "Am", frets: [2, 0, 0, 0] },
+            { name: "F", frets: [2, 0, 1, 0] },
+            { name: "Em", frets: [0, 4, 3, 2] },
+            { name: "Dm", frets: [2, 2, 1, 0] },
+            { name: "A", frets: [2, 1, 0, 0] },
+            { name: "D", frets: [2, 2, 2, 0] },
+            { name: "G7", frets: [0, 2, 1, 2] },
+            { name: "C7", frets: [0, 0, 0, 1] },
+            { name: "E7", frets: [1, 2, 0, 2] },
+            { name: "A7", frets: [0, 1, 0, 0] },
+            { name: "Bm", frets: [4, 2, 2, 2] },
+            { name: "Fm", frets: [1, 0, 1, 3] },
+            { name: "Bb", frets: [3, 2, 1, 1] },
+            { name: "Cm", frets: [0, 3, 3, 3] }
+        ];
+
+        const state = {
+            deviceType: 'mobile', // 'mobile', 'tablet', 'desktop'
+            layoutOrientation: 'vertical', // 'vertical' or 'horizontal'
+            mode: 'chord',
+            currentChord: CHORD_DATABASE[0],
+            freeFrets: [0, 0, 0, 0],
+            isLowG: false,
+            capo: 0,
+            metronomeRunning: false,
+            metronomeBpm: 100,
+            metronomeTimer: null,
+            activeTouches: new Map()
+        };
+
+        const ukeAudio = new UkuleleAudioEngine();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initChordPads();
+            setupEventListeners();
+            setupKeyboardShortcuts();
+            // Automatically prompt for device mode on first load
+        });
+
+        function openDeviceModal() {
+            document.getElementById('device-modal').classList.remove('hidden');
+        }
+
+        function setDeviceMode(type) {
+            state.deviceType = type;
+            state.layoutOrientation = (type === 'desktop') ? 'horizontal' : 'vertical';
+
+            document.getElementById('device-modal').classList.add('hidden');
+
+            const appContainer = document.getElementById('app-container');
+            const deviceLabel = document.getElementById('device-label');
+            const deviceIcon = document.getElementById('device-icon');
+            const layoutTag = document.getElementById('layout-tag');
+
+            // Dynamic strum button text & icons based on orientation
+            const downBtn = document.getElementById('strum-down-btn');
+            const upBtn = document.getElementById('strum-up-btn');
+
+            if (state.layoutOrientation === 'horizontal') {
+                appContainer.className = "max-w-5xl mx-auto w-full flex-1 flex flex-col justify-between overflow-hidden p-2 gap-2 transition-all duration-300";
+                deviceLabel.innerText = "電腦模式";
+                deviceIcon.className = "fa-solid fa-desktop";
+                layoutTag.innerText = "橫向寬螢幕模式";
+
+                if (downBtn) downBtn.innerHTML = `<i class="fa-solid fa-arrow-down text-amber-400"></i> 下刷 <span class="hidden md:inline text-[10px] opacity-60">(↓)</span>`;
+                if (upBtn) upBtn.innerHTML = `<i class="fa-solid fa-arrow-up text-amber-400"></i> 上刷 <span class="hidden md:inline text-[10px] opacity-60">(↑)</span>`;
+            } else {
+                appContainer.className = "max-w-md mx-auto w-full flex-1 flex flex-col justify-between overflow-hidden p-2 gap-2 transition-all duration-300";
+                deviceLabel.innerText = type === 'tablet' ? "平板模式" : "手機模式";
+                deviceIcon.className = type === 'tablet' ? "fa-solid fa-tablet-screen-button" : "fa-solid fa-mobile-screen";
+                layoutTag.innerText = "垂直觸控模式";
+
+                if (downBtn) downBtn.innerHTML = `<i class="fa-solid fa-arrow-right text-amber-400"></i> 右刷 (G→A)`;
+                if (upBtn) upBtn.innerHTML = `<i class="fa-solid fa-arrow-left text-amber-400"></i> 左刷 (A→G)`;
+            }
+
+            renderInstrumentLayout();
+            updateCapoVisual();
+            renderFretDots();
+            updateChordDisplay();
+        }
+
+        function initChordPads() {
+            const container = document.getElementById('chord-pads-container');
+            container.innerHTML = '';
+
+            CHORD_DATABASE.forEach((chord, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `px-3 py-1 rounded-lg border flex flex-col items-center justify-center shrink-0 transition active:scale-95 ${
+                    state.currentChord.name === chord.name
+                        ? 'bg-amber-600 border-amber-400 text-white shadow'
+                        : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
+                }`;
+                btn.onclick = () => selectChord(chord);
+
+                btn.innerHTML = `
+                    <span class="text-xs font-bold">${chord.name} <span class="text-[9px] opacity-50">(${idx+1})</span></span>
+                    <span class="text-[9px] opacity-70 font-mono">${chord.frets.join(' ')}</span>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        function renderInstrumentLayout() {
+            const container = document.getElementById('instrument-container');
+            container.innerHTML = '';
+
+            if (state.layoutOrientation === 'vertical') {
+                // Vertical layout for Mobile/Tablet
+                container.className = "flex-1 flex flex-col gap-2 overflow-hidden relative";
+                container.innerHTML = `
+                    <!-- Vertical Fretboard Neck -->
+                    <div class="flex-1 fretboard-wood rounded-xl border-2 border-amber-950 shadow-2xl relative overflow-hidden flex flex-col touch-none select-none">
+                        <div class="w-full bg-amber-950/90 text-amber-200/80 border-b border-amber-800/50 text-[10px] font-bold flex justify-around py-0.5 z-20">
+                            <span>G (4th)</span>
+                            <span>C (3rd)</span>
+                            <span>E (2nd)</span>
+                            <span>A (1st)</span>
+                        </div>
+                        <div class="w-full h-1.5 bg-amber-100/90 shadow z-20 shrink-0"></div>
+                        <div id="fretboard-grid" class="relative w-full flex-1 flex flex-col justify-between touch-none"></div>
+
+                        <div id="strings-overlay" class="absolute inset-0 top-6 flex justify-around pointer-events-none z-10 px-6">
+                            <div class="w-1 h-full bg-gradient-to-b from-amber-200/90 via-slate-200 to-amber-100/90 shadow string-line" id="fb-string-3"></div>
+                            <div class="w-1.5 h-full bg-gradient-to-b from-amber-200/90 via-slate-200 to-amber-100/90 shadow string-line" id="fb-string-2"></div>
+                            <div class="w-1 h-full bg-gradient-to-b from-amber-200/90 via-slate-200 to-amber-100/90 shadow string-line" id="fb-string-1"></div>
+                            <div class="w-0.5 h-full bg-gradient-to-b from-amber-200/90 via-slate-200 to-amber-100/90 shadow string-line" id="fb-string-0"></div>
+                        </div>
+
+                        <div id="capo-visual" class="hidden absolute left-0 right-0 h-3 bg-gradient-to-b from-amber-600 to-amber-800 z-20 shadow-lg border-y border-amber-400/50 flex items-center justify-center pointer-events-none">
+                            <span class="text-[9px] font-bold text-slate-900 tracking-widest uppercase">CAPO</span>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Strumming Zone -->
+                    <div class="h-36 shrink-0 body-wood rounded-xl border-2 border-amber-900 shadow-xl relative overflow-hidden flex flex-col items-center justify-center touch-none" id="strum-zone">
+                        <div class="soundhole w-28 h-28 rounded-full flex items-center justify-center relative">
+                            <div class="text-[9px] text-amber-500/40 font-bold uppercase tracking-wider pointer-events-none">Strum Zone</div>
+                        </div>
+                        <!-- Vertical strings layout matching fretboard above -->
+                        <div class="absolute inset-0 flex flex-row justify-around py-3 px-6 z-20" id="strum-strings-container">
+                            <div class="h-full w-8 flex items-center justify-center cursor-pointer group/str" data-string="3">
+                                <div class="h-full w-1 bg-amber-100 shadow group-hover/str:bg-amber-300 transition-all rounded-full string-elem" id="strum-string-3"></div>
+                            </div>
+                            <div class="h-full w-8 flex items-center justify-center cursor-pointer group/str" data-string="2">
+                                <div class="h-full w-1.5 bg-amber-100 shadow group-hover/str:bg-amber-300 transition-all rounded-full string-elem" id="strum-string-2"></div>
+                            </div>
+                            <div class="h-full w-8 flex items-center justify-center cursor-pointer group/str" data-string="1">
+                                <div class="h-full w-1 bg-amber-100 shadow group-hover/str:bg-amber-300 transition-all rounded-full string-elem" id="strum-string-1"></div>
+                            </div>
+                            <div class="h-full w-8 flex items-center justify-center cursor-pointer group/str" data-string="0">
+                                <div class="h-full w-0.5 bg-amber-100 shadow group-hover/str:bg-amber-300 transition-all rounded-full string-elem" id="strum-string-0"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Horizontal layout for Desktop
+                container.className = "flex-1 flex flex-col md:flex-row gap-3 overflow-hidden relative";
+                container.innerHTML = `
+                    <!-- Horizontal Fretboard Neck -->
+                    <div class="flex-1 fretboard-wood-horizontal rounded-xl border-2 border-amber-950 shadow-2xl relative overflow-hidden flex flex-row touch-none select-none">
+                        <div class="h-full bg-amber-950/90 text-amber-200/80 border-r border-amber-800/50 text-[10px] font-bold flex flex-col justify-around px-1 z-20">
+                            <span>A (1st)</span>
+                            <span>E (2nd)</span>
+                            <span>C (3rd)</span>
+                            <span>G (4th)</span>
+                        </div>
+                        <div class="h-full w-2 bg-amber-100/90 shadow z-20 shrink-0"></div>
+                        <div id="fretboard-grid" class="relative h-full flex-1 flex flex-row justify-between touch-none"></div>
+
+                        <div id="strings-overlay" class="absolute inset-0 left-8 flex flex-col justify-around pointer-events-none z-10 py-3">
+                            <div class="h-0.5 w-full bg-gradient-to-r from-amber-200/90 via-slate-200 to-amber-100/90 shadow string-line" id="fb-string-0"></div>
+                            <div class="h-1 w-full bg-gradient-to-r from-amber-200/90 via-slate-200 to-amber-100/90 shadow string-line" id="fb-string-1"></div>
+                            <div class="h-1.5 w-full bg-gradient-to-r from-amber-200/90 via-slate-200 to-amber-100/90 shadow string-line" id="fb-string-2"></div>
+                            <div class="h-1 w-full bg-gradient-to-r from-amber-200/90 via-slate-200 to-amber-100/90 shadow string-line" id="fb-string-3"></div>
+                        </div>
+
+                        <div id="capo-visual" class="hidden absolute top-0 bottom-0 w-3 bg-gradient-to-r from-amber-600 to-amber-800 z-20 shadow-lg border-x border-amber-400/50 flex items-center justify-center pointer-events-none">
+                            <span class="text-[8px] font-bold text-slate-900 tracking-widest uppercase rotate-90">CAPO</span>
+                        </div>
+                    </div>
+
+                    <!-- Right Side Strumming Zone for Desktop -->
+                    <div class="w-full md:w-56 h-40 md:h-auto shrink-0 body-wood rounded-xl border-2 border-amber-900 shadow-xl relative overflow-hidden flex flex-col items-center justify-center touch-none" id="strum-zone">
+                        <div class="soundhole w-32 h-32 rounded-full flex items-center justify-center relative">
+                            <div class="text-[9px] text-amber-500/40 font-bold uppercase tracking-wider pointer-events-none">Strum Zone</div>
+                        </div>
+                        <div class="absolute inset-0 flex flex-col justify-around py-4 px-6 z-20" id="strum-strings-container">
+                            <div class="w-full h-6 flex items-center cursor-pointer group/str" data-string="0">
+                                <div class="w-full h-0.5 bg-amber-100 shadow group-hover/str:bg-amber-300 transition-all rounded-full string-elem" id="strum-string-0"></div>
+                            </div>
+                            <div class="w-full h-6 flex items-center cursor-pointer group/str" data-string="1">
+                                <div class="w-full h-1 bg-amber-100 shadow group-hover/str:bg-amber-300 transition-all rounded-full string-elem" id="strum-string-1"></div>
+                            </div>
+                            <div class="w-full h-6 flex items-center cursor-pointer group/str" data-string="2">
+                                <div class="w-full h-1.5 bg-amber-100 shadow group-hover/str:bg-amber-300 transition-all rounded-full string-elem" id="strum-string-2"></div>
+                            </div>
+                            <div class="w-full h-6 flex items-center cursor-pointer group/str" data-string="3">
+                                <div class="w-full h-1 bg-amber-100 shadow group-hover/str:bg-amber-300 transition-all rounded-full string-elem" id="strum-string-3"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            initFretboardGrid();
+            setupTouchFretboard();
+            bindStrumZoneEvents();
+        }
+
+        function initFretboardGrid() {
+            const grid = document.getElementById('fretboard-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            const markerFrets = [3, 5, 7, 10, 12];
+            const isVert = state.layoutOrientation === 'vertical';
+
+            for (let f = 1; f <= 12; f++) {
+                const fretCell = document.createElement('div');
+
+                if (isVert) {
+                    fretCell.className = 'w-full flex-1 border-b border-slate-600/60 relative flex items-center justify-between px-2 group cursor-pointer';
+                } else {
+                    fretCell.className = 'h-full flex-1 border-r border-slate-600/60 relative flex flex-col items-center justify-between py-2 group cursor-pointer';
+                }
+                fretCell.dataset.fret = f;
+
+                if (markerFrets.includes(f)) {
+                    const dot = document.createElement('div');
+                    dot.className = `absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-amber-200/30 rounded-full pointer-events-none z-0 ${
+                        f === 12 ? 'w-4 h-2' : 'w-2 h-2'
+                    }`;
+                    fretCell.appendChild(dot);
+                }
+
+                // 4 String target boxes
+                for (let col = 0; col < 4; col++) {
+                    const stringIdx = isVert ? (3 - col) : col;
+                    const stringCell = document.createElement('div');
+                    stringCell.className = isVert ? 'w-1/4 h-full flex items-center justify-center z-20 relative' : 'h-1/4 w-full flex items-center justify-center z-20 relative';
+                    stringCell.dataset.string = stringIdx;
+                    stringCell.dataset.fret = f;
+
+                    stringCell.onclick = (e) => {
+                        e.stopPropagation();
+                        handleFretClick(stringIdx, f);
+                    };
+
+                    fretCell.appendChild(stringCell);
+                }
+
+                const label = document.createElement('span');
+                label.className = isVert
+                    ? 'absolute right-1 text-[8px] text-slate-500 font-mono pointer-events-none'
+                    : 'absolute bottom-0.5 text-[8px] text-slate-500 font-mono pointer-events-none';
+                label.innerText = f;
+                fretCell.appendChild(label);
+
+                grid.appendChild(fretCell);
+            }
+        }
+
+        function setupTouchFretboard() {
+            const grid = document.getElementById('fretboard-grid');
+            if (!grid) return;
+
+            const handleTouches = (e) => {
+                e.preventDefault();
+                state.activeTouches.clear();
+                const rect = grid.getBoundingClientRect();
+                const isVert = state.layoutOrientation === 'vertical';
+
+                for (let i = 0; i < e.touches.length; i++) {
+                    const touch = e.touches[i];
+                    const x = touch.clientX - rect.left;
+                    const y = touch.clientY - rect.top;
+
+                    if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
+                        let stringIdx, fret;
+                        if (isVert) {
+                            const colWidth = rect.width / 4;
+                            let colIdx = Math.floor(x / colWidth);
+                            colIdx = Math.max(0, Math.min(3, colIdx));
+                            stringIdx = 3 - colIdx;
+
+                            const rowHeight = rect.height / 12;
+                            fret = Math.floor(y / rowHeight) + 1;
+                            fret = Math.max(1, Math.min(12, fret));
+                        } else {
+                            const rowHeight = rect.height / 4;
+                            let rowIdx = Math.floor(y / rowHeight);
+                            stringIdx = Math.max(0, Math.min(3, rowIdx));
+
+                            const colWidth = rect.width / 12;
+                            fret = Math.floor(x / colWidth) + 1;
+                            fret = Math.max(1, Math.min(12, fret));
+                        }
+
+                        state.activeTouches.set(touch.identifier, { stringIdx, fret });
+                    }
+                }
+
+                if (e.touches.length > 0) {
+                    if (state.mode !== 'free') {
+                        switchMode('free');
+                    }
+                    
+                    const newFrets = [0, 0, 0, 0];
+                    state.activeTouches.forEach(({ stringIdx, fret }) => {
+                        if (fret > newFrets[stringIdx]) {
+                            newFrets[stringIdx] = fret;
+                        }
+                    });
+
+                    state.freeFrets = newFrets;
+                    renderFretDots();
+                    updateChordDisplay();
+                }
+            };
+
+            grid.addEventListener('touchstart', handleTouches, { passive: false });
+            grid.addEventListener('touchmove', handleTouches, { passive: false });
+            grid.addEventListener('touchend', handleTouches, { passive: false });
+            grid.addEventListener('touchcancel', handleTouches, { passive: false });
+        }
+
+        function bindStrumZoneEvents() {
+            const strumZone = document.getElementById('strum-zone');
+            if (!strumZone) return;
+
+            let isStrumming = false;
+
+            strumZone.addEventListener('pointerdown', (e) => {
+                isStrumming = true;
+                handleStrumPointer(e);
+            });
+
+            strumZone.addEventListener('pointermove', (e) => {
+                if (isStrumming) {
+                    handleStrumPointer(e);
+                }
+            });
+
+            window.addEventListener('pointerup', () => {
+                isStrumming = false;
+            });
+
+            document.querySelectorAll('#strum-strings-container > div').forEach(el => {
+                el.onclick = (e) => {
+                    e.stopPropagation();
+                    const stringIdx = parseInt(el.dataset.string, 10);
+                    pluckString(stringIdx);
+                };
+            });
+        }
+
+        function setupEventListeners() {
+            document.getElementById('mode-chord-btn').onclick = () => switchMode('chord');
+            document.getElementById('mode-free-btn').onclick = () => switchMode('free');
+
+            document.getElementById('capo-select').onchange = (e) => {
+                state.capo = parseInt(e.target.value, 10);
+                ukeAudio.setCapo(state.capo);
+                updateCapoVisual();
+            };
+
+            document.getElementById('tuning-btn').onclick = () => {
+                state.isLowG = !state.isLowG;
+                ukeAudio.setTuning(state.isLowG);
+                document.getElementById('tuning-label').innerText = state.isLowG ? 'Low-G' : 'High-G';
+            };
+
+            document.getElementById('metro-toggle').onclick = toggleMetronome;
+
+            document.getElementById('strum-down-btn').onclick = () => strum('down');
+            document.getElementById('strum-up-btn').onclick = () => strum('up');
+            document.getElementById('strum-arpeggio-btn').onclick = () => strum('arpeggio');
+        }
+
+        function setupKeyboardShortcuts() {
+            window.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+                if (e.key >= '1' && e.key <= '9') {
+                    const chordIdx = parseInt(e.key, 10) - 1;
+                    if (CHORD_DATABASE[chordIdx]) {
+                        selectChord(CHORD_DATABASE[chordIdx]);
+                    }
+                } else if (e.key === 'ArrowDown') {
+                    strum('down');
+                } else if (e.key === 'ArrowUp') {
+                    strum('up');
+                } else if (e.key === ' ') {
+                    e.preventDefault();
+                    strum('down');
+                }
+            });
+        }
+
+        function selectChord(chord) {
+            state.currentChord = chord;
+            initChordPads();
+            updateChordDisplay();
+            renderFretDots();
+        }
+
+        function switchMode(newMode) {
+            state.mode = newMode;
+            const chordBtn = document.getElementById('mode-chord-btn');
+            const freeBtn = document.getElementById('mode-free-btn');
+
+            if (newMode === 'chord') {
+                chordBtn.className = 'px-2.5 py-1 rounded-md font-semibold transition bg-amber-600 text-white shadow';
+                freeBtn.className = 'px-2.5 py-1 rounded-md font-semibold text-slate-400 hover:text-slate-200 transition';
+            } else {
+                freeBtn.className = 'px-2.5 py-1 rounded-md font-semibold transition bg-amber-600 text-white shadow';
+                chordBtn.className = 'px-2.5 py-1 rounded-md font-semibold text-slate-400 hover:text-slate-200 transition';
+            }
+
+            renderFretDots();
+            updateChordDisplay();
+        }
+
+        function handleFretClick(stringIdx, fret) {
+            if (state.mode !== 'free') {
+                switchMode('free');
+            }
+
+            if (state.freeFrets[stringIdx] === fret) {
+                state.freeFrets[stringIdx] = 0;
+            } else {
+                state.freeFrets[stringIdx] = fret;
+            }
+
+            renderFretDots();
+            updateChordDisplay();
+            pluckString(stringIdx);
+        }
+
+        function getCurrentFrets() {
+            return state.mode === 'chord' ? state.currentChord.frets : state.freeFrets;
+        }
+
+        function pluckString(stringIdx) {
+            const frets = getCurrentFrets();
+            const fret = frets[stringIdx];
+
+            ukeAudio.playPluck(stringIdx, fret);
+            animateString(stringIdx);
+        }
+
+        function strum(pattern = 'down') {
+            const strings = pattern === 'up' ? [0, 1, 2, 3] : [3, 2, 1, 0];
+            const frets = getCurrentFrets();
+
+            strings.forEach((sIdx, step) => {
+                const delay = pattern === 'arpeggio' ? step * 0.12 : step * 0.03;
+                setTimeout(() => {
+                    ukeAudio.playPluck(sIdx, frets[sIdx]);
+                    animateString(sIdx);
+                }, delay * 1000);
+            });
+        }
+
+        let lastStrumTime = 0;
+        function handleStrumPointer(e) {
+            const now = Date.now();
+            if (now - lastStrumTime < 35) return;
+
+            const strumZone = document.getElementById('strum-zone');
+            if (!strumZone) return;
+
+            const rect = strumZone.getBoundingClientRect();
+
+            if (state.layoutOrientation === 'vertical') {
+                // Horizontal swiping across vertical strings
+                const relativeX = e.clientX - rect.left;
+                const width = rect.width;
+                const colIdx = Math.floor((relativeX / width) * 4);
+                const clampedCol = Math.max(0, Math.min(3, colIdx));
+                // Strings from left to right: 3 (G), 2 (C), 1 (E), 0 (A)
+                const stringIdx = 3 - clampedCol;
+                pluckString(stringIdx);
+            } else {
+                // Vertical swiping across horizontal strings for desktop
+                const relativeY = e.clientY - rect.top;
+                const height = rect.height;
+                const rowIdx = Math.floor((relativeY / height) * 4);
+                const clampedRow = Math.max(0, Math.min(3, rowIdx));
+                pluckString(clampedRow);
+            }
+
+            lastStrumTime = now;
+        }
+
+        function animateString(stringIdx) {
+            const fbString = document.getElementById(`fb-string-${stringIdx}`);
+            const strumString = document.getElementById(`strum-string-${stringIdx}`);
+
+            if (fbString) {
+                fbString.classList.add('string-vibrating', 'bg-amber-300');
+                setTimeout(() => fbString.classList.remove('string-vibrating', 'bg-amber-300'), 150);
+            }
+
+            if (strumString) {
+                strumString.classList.add('string-vibrating', 'bg-amber-300');
+                setTimeout(() => strumString.classList.remove('string-vibrating', 'bg-amber-300'), 150);
+            }
+        }
+
+        function renderFretDots() {
+            document.querySelectorAll('.fret-dot-marker').forEach(el => el.remove());
+
+            const frets = getCurrentFrets();
+
+            frets.forEach((fret, stringIdx) => {
+                if (fret > 0) {
+                    const targetCell = document.querySelector(`[data-fret="${fret}"] [data-string="${stringIdx}"]`);
+                    if (targetCell) {
+                        const dot = document.createElement('div');
+                        dot.className = 'fret-dot-marker w-4 h-4 rounded-full bg-amber-400 border border-slate-900 shadow-md transform scale-110 z-30 flex items-center justify-center animate-pulse';
+                        dot.innerHTML = `<span class="text-[8px] font-bold text-slate-950">${4 - stringIdx}</span>`;
+                        targetCell.appendChild(dot);
+                    }
+                }
+            });
+        }
+
+        function detectChordName(frets) {
+            const fretStr = frets.join(' ');
+            const matched = CHORD_DATABASE.find(c => c.frets.join(' ') === fretStr);
+            if (matched) return matched.name;
+            if (frets.every(f => f === 0)) return "Open (空弦)";
+            return "自訂和弦";
+        }
+
+        function updateChordDisplay() {
+            const chordNameEl = document.getElementById('current-chord-name');
+            const chordFretsTag = document.getElementById('chord-frets-tag');
+
+            if (!chordNameEl || !chordFretsTag) return;
+
+            if (state.mode === 'chord') {
+                chordNameEl.innerText = state.currentChord.name;
+                chordFretsTag.innerText = `(${state.currentChord.frets.join(' ')})`;
+            } else {
+                chordNameEl.innerText = detectChordName(state.freeFrets);
+                chordFretsTag.innerText = `(${state.freeFrets.join(' ')})`;
+            }
+        }
+
+        function updateCapoVisual() {
+            const capoVisual = document.getElementById('capo-visual');
+            if (!capoVisual) return;
+
+            if (state.capo > 0) {
+                capoVisual.classList.remove('hidden');
+                const fretRow = document.querySelector(`[data-fret="${state.capo}"]`);
+                if (fretRow) {
+                    if (state.layoutOrientation === 'vertical') {
+                        capoVisual.style.top = `${fretRow.offsetTop + 8}px`;
+                        capoVisual.style.left = '0';
+                        capoVisual.style.right = '0';
+                    } else {
+                        capoVisual.style.left = `${fretRow.offsetLeft + 8}px`;
+                        capoVisual.style.top = '0';
+                        capoVisual.style.bottom = '0';
+                    }
+                }
+            } else {
+                capoVisual.classList.add('hidden');
+            }
+        }
+
+        function toggleMetronome() {
+            const icon = document.getElementById('metro-icon');
+            state.metronomeRunning = !state.metronomeRunning;
+
+            if (state.metronomeRunning) {
+                icon.className = 'fa-solid fa-stopwatch text-amber-400 animate-pulse';
+                const interval = (60 / state.metronomeBpm) * 1000;
+                
+                state.metronomeTimer = setInterval(() => {
+                    playMetronomeClick();
+                }, interval);
+            } else {
+                icon.className = 'fa-solid fa-stopwatch text-amber-400';
+                if (state.metronomeTimer) clearInterval(state.metronomeTimer);
+            }
+        }
+
+        function playMetronomeClick() {
+            ukeAudio.init();
+            const ctx = ukeAudio.audioCtx;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1000, ctx.currentTime);
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.start();
+            osc.stop(ctx.currentTime + 0.05);
+        }
+    </script>
+</body>
+</html>
